@@ -1,0 +1,126 @@
+<html>
+<head>
+
+    <style>
+        /* Style for the chat box */
+        .chat-box {
+            background-color: #f2f2f2;
+            width: 800px;
+            height: 400px;
+            border: 1px solid #ccc;
+            overflow-y: scroll;
+            padding: 10px;
+            display:flex;
+
+        }
+
+        .chat-box-l{
+            background-color : yellow;
+            color: black;
+            width: 400px;
+            height: 400px;
+            border: 1px solid #ccc;
+        }
+
+        .chat-box-r{
+            background-color : blue;
+            color: black;
+            width: 400px;
+            height: 400px;
+            border: 1px solid #ccc;
+        }
+
+        #messages p {
+            margin: 5px 0;
+            padding: 8px;
+            background-color: #e6f7ff;
+            border-radius: 5px;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.js"></script>
+    <script type="text/javascript">
+            var stompClient = null;
+            var privateStompClient = null;
+
+            var socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function(frame) {
+                console.log(frame);
+                stompClient.subscribe('/all/messages', function(result) {
+                    showGroup(JSON.parse(result.body));
+                });
+            });
+
+            socket = new SockJS('/ws');
+            privateStompClient = Stomp.over(socket);
+            privateStompClient.connect({}, function(frame) {
+                    console.log(frame);
+                    privateStompClient.subscribe('/user/specific', function(result) {
+                    console.log(result.body)
+                        showPrivate(JSON.parse(result.body));
+                    });
+                });
+
+
+            function sendMessage() {
+                var text = document.getElementById('text').value;
+                stompClient.send("/app/application", {},
+                  JSON.stringify({'text':text}));
+            }
+
+             function sendPrivateMessage() {
+                var text = document.getElementById('privateText').value;
+                var to = document.getElementById('to').value;
+                privateStompClient.send("/app/private", {},
+                  JSON.stringify({'text':text, 'to':to}));
+            }
+
+            function showGroup(message) {
+                var response = document.getElementById('group');
+                var p = document.createElement('p');
+                p.innerHTML= "message: "  + message.text;
+                response.appendChild(p);
+            }
+
+            function showPrivate(message) {
+                var response = document.getElementById('messages');
+                var p = document.createElement('p');
+                p.innerHTML= "message: "  + message.text;
+                response.appendChild(p);
+            }
+        </script>
+</head>
+<body>
+<div>
+    <div>
+        <h1>Send messages globally</h1>
+        <button id="sendMessage" onclick="sendMessage();">Send</button>
+        <input type="text" id="text" placeholder="Text"/>
+    </div>
+    <br />
+    <br />
+    <br />
+    <br />
+    <div>
+        <h1 class="bold">USER</h1>
+        <button id="sendPrivateMessage" onclick="sendPrivateMessage();">Send </button>
+        <input type="text" id="privateText" placeholder="Private Message"/>
+        <input type="text" id="to" placeholder="To"/>
+    </div>
+    <br />
+    <br />
+    <br />
+
+    <body>
+    <div class="chat-box">
+        <div class="chat-box-l" id="messages"></div>
+        <div class="chat-box-r" id="group"></div>
+    </div>
+    </body>
+
+</div>
+
+</body>
+</html>
